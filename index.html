@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专注番茄钟 · Focus Tomato</title>
+<style>
+  :root{
+    --bg:#0f1218;--card:#171c26;--line:#242c3a;--text:#e8edf7;--muted:#8b97ad;
+    --brand:#ff6b5b;--brand-2:#ffb86b;--ok:#3ddc97;--shadow:0 18px 50px rgba(0,0,0,.45);
+  }
+  html[data-theme="light"]{
+    --bg:#f4f6fb;--card:#ffffff;--line:#e2e8f2;--text:#141a24;--muted:#66738a;
+    --brand:#f4553f;--brand-2:#f7a53c;--ok:#12a06a;--shadow:0 18px 50px rgba(20,40,80,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:
+      radial-gradient(900px 500px at 12% -10%,rgba(255,107,91,.18),transparent 60%),
+      radial-gradient(800px 480px at 92% 8%,rgba(255,184,107,.14),transparent 55%),
+      var(--bg);
+    color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;align-items:center;justify-content:center;padding:28px 18px}
+  .app{width:min(980px,100%);display:grid;grid-template-columns:1.15fr .85fr;gap:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+  .main{padding:26px 26px 22px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .topbar{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.3px}
+  .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 0 18px rgba(255,107,91,.7)}
+  .tools{display:flex;gap:8px}
+  button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:transparent;
+    border-radius:12px;padding:8px 14px;transition:.18s ease}
+  button:hover{border-color:var(--brand);transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .icon-btn{width:38px;height:38px;padding:0;display:grid;place-items:center;font-size:15px}
+  .modes{display:flex;gap:6px;background:rgba(127,127,127,.08);padding:5px;border-radius:14px;border:1px solid var(--line)}
+  .modes button{border:none;padding:7px 16px;border-radius:10px;color:var(--muted);font-size:14px}
+  .modes button.active{background:var(--card);color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.18);font-weight:600}
+  .ring-wrap{position:relative;width:290px;height:290px;display:grid;place-items:center}
+  svg.ring{position:absolute;inset:0;transform:rotate(-90deg)}
+  .ring circle{fill:none;stroke-width:12;stroke-linecap:round}
+  .ring .track{stroke:rgba(127,127,127,.16)}
+  .ring .bar{stroke:url(#grad);transition:stroke-dashoffset .25s linear}
+  .time{font-size:66px;font-weight:700;letter-spacing:-2px;font-variant-numeric:tabular-nums;line-height:1}
+  .phase{color:var(--muted);font-size:14px;margin-top:8px;letter-spacing:2px}
+  .clock{display:flex;flex-direction:column;align-items:center}
+  .actions{display:flex;gap:10px;align-items:center}
+  .primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border:none;
+    padding:12px 34px;border-radius:14px;font-weight:700;letter-spacing:1px;box-shadow:0 10px 26px rgba(255,107,91,.35)}
+  .primary:hover{filter:brightness(1.06)}
+  .ghost{color:var(--muted)}
+  .summary{display:flex;gap:22px;color:var(--muted);font-size:13px;margin-top:2px}
+  .summary b{color:var(--text);font-size:15px}
+  .side{display:flex;flex-direction:column;gap:20px}
+  .panel{padding:20px}
+  .panel h3{margin:0 0 12px;font-size:14px;letter-spacing:1px;color:var(--muted);font-weight:600}
+  .tasks{display:flex;flex-direction:column;gap:8px;max-height:250px;overflow:auto}
+  .task{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(127,127,127,.05)}
+  .task .box{width:18px;height:18px;border-radius:6px;border:1.5px solid var(--muted);display:grid;place-items:center;font-size:11px;flex:none}
+  .task.done .box{background:var(--ok);border-color:var(--ok);color:#062}
+  .task.done .txt{text-decoration:line-through;color:var(--muted)}
+  .task .txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .task .del{border:none;color:var(--muted);padding:2px 6px;opacity:0}
+  .task:hover .del{opacity:1}
+  .add{display:flex;gap:8px;margin-top:10px}
+  .add input{flex:1;background:transparent;border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--text);font:inherit;outline:none}
+  .add input:focus{border-color:var(--brand)}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{background:rgba(127,127,127,.06);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .stat span{color:var(--muted);font-size:12px}
+  .stat b{display:block;font-size:24px;margin-top:2px}
+  .tips{color:var(--muted);font-size:12px;line-height:1.9}
+  kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;font-size:11px;background:rgba(127,127,127,.08)}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+    background:var(--card);border:1px solid var(--line);padding:10px 18px;border-radius:999px;box-shadow:var(--shadow);transition:.25s}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  @media (max-width:860px){
+    .app{grid-template-columns:1fr}
+    .ring-wrap{width:250px;height:250px}
+    .time{font-size:56px}
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <section class="card main">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span>专注番茄钟</div>
+      <div class="tools">
+        <button class="icon-btn" id="themeBtn" title="切换主题">◐</button>
+        <button class="icon-btn" id="soundBtn" title="提示音开关">♪</button>
+      </div>
+    </div>
+
+    <div class="modes" id="modes">
+      <button data-mode="focus" class="active">专注 25</button>
+      <button data-mode="short">短休 5</button>
+      <button data-mode="long">长休 15</button>
+    </div>
+
+    <div class="ring-wrap">
+      <svg class="ring" viewBox="0 0 300 300" aria-hidden="true">
+        <defs>
+          <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ff6b5b"/>
+            <stop offset="100%" stop-color="#ffb86b"/>
+          </linearGradient>
+        </defs>
+        <circle class="track" cx="150" cy="150" r="132"/>
+        <circle class="bar" id="bar" cx="150" cy="150" r="132"/>
+      </svg>
+      <div class="clock">
+        <div class="time" id="time">25:00</div>
+        <div class="phase" id="phase">FOCUS</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="startBtn">开始</button>
+      <button class="ghost" id="resetBtn">重置</button>
+      <button class="ghost" id="skipBtn">跳过</button>
+    </div>
+
+    <div class="summary">
+      <div>今日专注 <b id="todayCount">0</b> 次</div>
+      <div>累计分钟 <b id="todayMin">0</b></div>
+      <div>连续 <b id="streak">1</b> 天</div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <section class="card panel">
+      <h3>今日任务</h3>
+      <div class="tasks" id="taskList"></div>
+      <div class="add">
+        <input id="taskInput" placeholder="添加一个任务，回车确认" maxlength="40">
+        <button id="addBtn">添加</button>
+      </div>
+    </section>
+
+    <section class="card panel">
+      <h3>统计</h3>
+      <div class="stats">
+        <div class="stat"><span>本周专注</span><b id="weekCount">0</b></div>
+        <div class="stat"><span>完成番茄</span><b id="totalCount">0</b></div>
+      </div>
+    </section>
+
+    <section class="card panel">
+      <h3>快捷键</h3>
+      <div class="tips">
+        <kbd>空格</kbd> 开始 / 暂停　<kbd>R</kbd> 重置<br>
+        <kbd>N</kbd> 跳过当前阶段　<kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 切换模式<br>
+        数据保存在本地浏览器，刷新不丢失。
+      </div>
+    </section>
+  </aside>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const MODES = {
+  focus: { label: '专注', minutes: 25, phase: 'FOCUS' },
+  short: { label: '短休', minutes: 5, phase: 'BREAK' },
+  long:  { label: '长休', minutes: 15, phase: 'LONG BREAK' }
+};
+const STORE = 'focus-tomato-v1';
+
+const state = {
+  mode: 'focus',
+  remain: MODES.focus.minutes * 60,
+  running: false,
+  timer: null,
+  endAt: 0,
+  sound: true,
+  tasks: [],
+  stats: { date: todayKey(), todayCount: 0, todayMin: 0, totalCount: 0, weekCount: 0, weekStart: weekKey(), streak: 1 }
+};
+
+const $ = id => document.getElementById(id);
+const bar = $('bar');
+const RADIUS = 132;
+const CIRC = 2 * Math.PI * RADIUS;
+bar.style.strokeDasharray = CIRC;
+
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+function weekKey(){
+  const d = new Date();
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  return d.toISOString().slice(0,10);
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    if(Array.isArray(saved.tasks)) state.tasks = saved.tasks;
+    if(saved.sound !== undefined) state.sound = !!saved.sound;
+    if(saved.stats){
+      Object.assign(state.stats, saved.stats);
+      if(state.stats.date !== todayKey()){ state.stats.date = todayKey(); state.stats.todayCount = 0; state.stats.todayMin = 0; }
+      if(state.stats.weekStart !== weekKey()){ state.stats.weekStart = weekKey(); state.stats.weekCount = 0; }
+    }
+  }catch(e){ /* ignore corrupt storage */ }
+}
+function save(){
+  localStorage.setItem(STORE, JSON.stringify({ tasks: state.tasks, sound: state.sound, stats: state.stats }));
+}
+
+function paintTime(){
+  const m = String(Math.floor(state.remain / 60)).padStart(2, '0');
+  const s = String(state.remain % 60).padStart(2, '0');
+  $('time').textContent = `${m}:${s}`;
+  $('phase').textContent = MODES[state.mode].phase;
+  const total = MODES[state.mode].minutes * 60;
+  const ratio = Math.max(0, Math.min(1, state.remain / total));
+  bar.style.strokeDashoffset = String(CIRC * (1 - ratio));
+  document.title = (state.running ? '▶ ' : '') + `${m}:${s} · 专注番茄钟`;
+}
+
+function paintStats(){
+  $('todayCount').textContent = state.stats.todayCount;
+  $('todayMin').textContent = state.stats.todayMin;
+  $('totalCount').textContent = state.stats.totalCount;
+  $('weekCount').textContent = state.stats.weekCount;
+  $('streak').textContent = state.stats.streak;
+}
+
+function renderTasks(){
+  const list = $('taskList');
+  list.innerHTML = '';
+  if(!state.tasks.length){
+    const empty = document.createElement('div');
+    empty.className = 'tips';
+    empty.textContent = '还没有任务，添加一个开始专注。';
+    list.appendChild(empty);
+    return;
+  }
+  state.tasks.forEach((task, i) => {
+    const row = document.createElement('div');
+    row.className = 'task' + (task.done ? ' done' : '');
+    row.innerHTML = '<span class="box">' + (task.done ? '✓' : '') + '</span><span class="txt"></span><button class="del" title="删除">✕</button>';
+    row.querySelector('.txt').textContent = task.text;
+    row.querySelector('.box').onclick = () => { task.done = !task.done; save(); renderTasks(); };
+    row.querySelector('.del').onclick = () => { state.tasks.splice(i,1); save(); renderTasks(); };
+    list.appendChild(row);
+  });
+}
+
+function setMode(mode, silent){
+  if(!MODES[mode]) return;
+  state.mode = mode;
+  stop();
+  state.remain = MODES[mode].minutes * 60;
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  paintTime();
+  if(!silent) toast(`已切换到${MODES[mode].label}模式`);
+}
+
+function tick(){
+  const left = Math.max(0, Math.round((state.endAt - Date.now()) / 1000));
+  state.remain = left;
+  paintTime();
+  if(left <= 0) finish();
+}
+
+function start(){
+  if(state.running) return;
+  state.running = true;
+  state.endAt = Date.now() + state.remain * 1000;
+  state.timer = setInterval(tick, 250);
+  $('startBtn').textContent = '暂停';
+  paintTime();
+}
+
+function stop(){
+  state.running = false;
+  if(state.timer){ clearInterval(state.timer); state.timer = null; }
+  $('startBtn').textContent = '开始';
+  paintTime();
+}
+
+function reset(){
+  stop();
+  state.remain = MODES[state.mode].minutes * 60;
+  paintTime();
+}
+
+function finish(){
+  stop();
+  chime();
+  if(state.mode === 'focus'){
+    state.stats.todayCount += 1;
+    state.stats.totalCount += 1;
+    state.stats.weekCount += 1;
+    state.stats.todayMin += MODES.focus.minutes;
+    const next = state.stats.todayCount % 4 === 0 ? 'long' : 'short';
+    setMode(next, true);
+    toast('专注完成，休息一下');
+  }else{
+    setMode('focus', true);
+    toast('休息结束，继续专注');
+  }
+  save();
+  paintStats();
+}
+
+let audioCtx = null;
+function chime(){
+  if(!state.sound) return;
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    [880, 1174.7, 1568].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + i * 0.16);
+      gain.gain.linearRampToValueAtTime(0.18, now + i * 0.16 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.16 + 0.5);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now + i * 0.16);
+      osc.stop(now + i * 0.16 + 0.55);
+    });
+  }catch(e){ /* audio blocked */ }
+}
+
+let toastTimer = null;
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function addTask(){
+  const input = $('taskInput');
+  const text = input.value.trim();
+  if(!text) return;
+  state.tasks.push({ text, done: false });
+  input.value = '';
+  save();
+  renderTasks();
+}
+
+$('startBtn').onclick = () => state.running ? stop() : start();
+$('resetBtn').onclick = reset;
+$('skipBtn').onclick = () => { if(state.mode === 'focus') setMode('short'); else setMode('focus'); };
+$('addBtn').onclick = addTask;
+$('taskInput').addEventListener('keydown', e => { if(e.key === 'Enter') addTask(); });
+document.querySelectorAll('#modes button').forEach(btn => {
+  btn.onclick = () => setMode(btn.dataset.mode);
+});
+
+$('themeBtn').onclick = () => {
+  const root = document.documentElement;
+  const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+  root.dataset.theme = next;
+  localStorage.setItem('focus-tomato-theme', next);
+};
+$('soundBtn').onclick = () => {
+  state.sound = !state.sound;
+  $('soundBtn').style.opacity = state.sound ? '1' : '.4';
+  save();
+  toast(state.sound ? '提示音已开启' : '提示音已关闭');
+};
+
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT') return;
+  if(e.code === 'Space'){ e.preventDefault(); state.running ? stop() : start(); }
+  else if(e.key.toLowerCase() === 'r') reset();
+  else if(e.key.toLowerCase() === 'n'){ state.mode === 'focus' ? setMode('short') : setMode('focus'); }
+  else if(e.key === '1') setMode('focus');
+  else if(e.key === '2') setMode('short');
+  else if(e.key === '3') setMode('long');
+});
+
+state.sound = localStorage.getItem('focus-tomato-theme') === null ? state.sound : state.sound;
+document.documentElement.dataset.theme = localStorage.getItem('focus-tomato-theme') || 'dark';
+load();
+$('soundBtn').style.opacity = state.sound ? '1' : '.4';
+paintTime();
+paintStats();
+renderTasks();
+</script>
+</body>
+</html>
